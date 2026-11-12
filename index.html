@@ -1,4 +1,10 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Pixel Shift</title><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<!DOCTYPE html><html lang="en">
+<head>
+<link rel="icon" type="image/png" href="Pixel_Shift_Icon.png">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pixel Shift</title>/
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#14101f;--fg:#f4ecff;--bt:#3a2f5c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0a16;--fg:#f4ecff;--bt:#2c2347}}
@@ -527,4 +533,6 @@ function draw(){g.setTransform(3,0,0,3,0,0);g.imageSmoothingEnabled=false;
  if(!mus&&sc!='editor'&&sc!='ed_load')tx('MUSIC OFF',W-6,H-6,'#ccc','right')}
 let last=0,acc=0;function loop(t){acc+=Math.min(t-last,100);last=t;while(acc>=16.667){upd();acc-=16.667}draw();requestAnimationFrame(loop)}
 requestAnimationFrame(t=>{last=t;loop(t)});
-</script></body></html>
+</script>
+</body>
+</html>
