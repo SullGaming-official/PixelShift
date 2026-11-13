@@ -440,8 +440,8 @@ function completeLevel(n){applyDone(n);if(olRole)olSend({t:'done',lv:n,id:myId})
 function noteDone(d){if(!d.id||d.id==myId)return;const cu=d.c?1:0;
  if(cu==(isCustom?1:0)&&(cu||(d.lv|0)==lv)&&(sc=='play'||sc=='dead'||sc=='pause'||sc=='over')){sc='win';dt=110;winBy=d.id;sfx('win')}
  else if(!cu)olNote('P'+d.id+' cleared level '+((d.lv|0)+1))}
-function netPos(){olSend({t:'pos',id:myId,x:+p.x.toFixed(1),y:+p.y.toFixed(1),f:p.face,k:sk,a:Math.floor(p.an)&1,o:p.on?1:0,s:sc=='dead'?1:0,h:p.sh?1:0,w:p.wg>0?1:0,r:p.st>0?1:0})}
-function setRemote(d){if(Number.isFinite(d.x)&&Number.isFinite(d.y)&&Number.isInteger(d.id)&&d.id!=myId)olRemotes[d.id]={x:d.x,y:d.y,f:d.f<0?-1:1,k:d.k|0,a:d.a&1,o:d.o?1:0,s:d.s?1:0,h:d.h?1:0,w:d.w?1:0,r:d.r?1:0,t:tm}}
+function netPos(){olSend({t:'pos',id:myId,x:+p.x.toFixed(1),y:+p.y.toFixed(1),f:p.face,k:sk,a:Math.floor(p.an)&1,o:p.on?1:0,s:sc=='dead'?1:0,h:p.sh?1:0,w:p.wg>0?1:0,r:p.st>0?1:0,z:HK.sz})}
+function setRemote(d){if(Number.isFinite(d.x)&&Number.isFinite(d.y)&&Number.isInteger(d.id)&&d.id!=myId)olRemotes[d.id]={x:d.x,y:d.y,f:d.f<0?-1:1,k:d.k|0,a:d.a&1,o:d.o?1:0,s:d.s?1:0,h:d.h?1:0,w:d.w?1:0,r:d.r?1:0,z:Number.isFinite(d.z)?cl(d.z,.25,8):1,t:tm}}
 let olKilled=new Set(),winBy=0;
 function goEd(){isCustom=false;sc='editor';if(olRole)olSend({t:'edgo'})}
 function edGoRemote(){if(isCustom){isCustom=false;sc='editor';olRemotes={};if(AC)setSong(edW)}}
@@ -529,13 +529,13 @@ function btn(x,y,w,h,s,sl,c,z){g.fillStyle=sl?'#ffffff30':'#ffffff12';g.fillRect
 function drawGhosts(){const c=Math.floor(cam);
  for(const id in olRemotes){const r=olRemotes[id];if(tm-r.t>90)continue;
   const X=Math.round(r.x-c)-1,Y=Math.round(r.y),f=r.f,K2=SK[r.k%SK.length]||SK[0],lg=r.o?r.a:2;
-  g.globalAlpha=r.s?.25:.55;
+  g.globalAlpha=r.s?.25:.55;const z=r.z||1;if(z!=1){g.save();g.translate(Math.round(r.x-c)+5*z,Math.round(r.y)+14*z);g.scale(z,z);g.translate(-(X+6),-(Y+14))}
   g.fillStyle=K2.h;g.fillRect(X+1,Y,10,4);g.fillRect(f>0?X+6:X-1,Y+2,6,2);g.fillStyle=K2.s;g.fillRect(X+2,Y+4,8,4);g.fillStyle='#000';g.fillRect(X+(f>0?7:3),Y+5,2,2);
   g.fillStyle=K2.b;g.fillRect(X+1,Y+8,10,3);g.fillStyle=K2.l;g.fillRect(X+(lg==1?0:1),Y+11,4,3);g.fillRect(X+(lg==1?8:7),Y+11,4,3);
   if(r.h){g.strokeStyle='#4ac8ffcc';g.lineWidth=1.2;g.beginPath();g.arc(X+6,Y+7,11,0,7);g.stroke()}
   if(r.w){g.fillStyle='#ffffffcc';const fw=(tm>>2)&1?3:0;g.fillRect(X-5,Y+3+fw,5,3);g.fillRect(X+12,Y+3+fw,5,3)}
   if(r.r&&(tm>>2)&1){g.fillStyle='#ffd84a88';g.fillRect(X-1,Y-1,14,16)}
-  g.globalAlpha=1;tx('P'+id,X+6,Y-3,'#fff','center',5)}}
+  if(z!=1)g.restore();g.globalAlpha=1;tx('P'+id,Math.round(r.x-c)+5*z,Y-3,'#fff','center',5)}}
 
 /* ---------- level generation ---------- */
 function en(df,u,x,y,sp,mn,mx){const k=df<.1||u<.45?'w':u<.65?'s':'h';return{k,x,y,y0:y,vy:0,tt:40,dir:1,sp,mn,mx,alive:1}}
