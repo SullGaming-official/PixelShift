@@ -29,9 +29,9 @@ small{opacity:.6;font-size:12px}
 </style></head><body>
 <canvas id="c" width="960" height="576"></canvas>
 <input id="ci" maxlength="6" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
-<div id="tc"><div id="joy"><div id="knob"></div></div><button class="ab" id="bx" data-k="x">SWAP</button><button class="ab" id="bj" data-k=" ">JUMP</button><button class="sb" id="pz" data-k="escape">II</button></div>
+<div id="tc"><div id="joy"><div id="knob"></div></div><button class="ab" id="bx" data-k="x">TIME</button><button class="ab" id="bj" data-k=" ">JUMP</button><button class="sb" id="pz" data-k="escape">II</button></div>
 <button class="sb" id="fsb" title="Fullscreen" aria-label="Fullscreen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
-<small>Arrows/WASD move · Space/Up jump · X or Shift swap dimension · Esc pause · M music · Controller: stick/D-pad move, A jump, X/B swap, Start pause · Right stick press / corner button: fullscreen</small>
+<small>Arrows/WASD move · Space/Up jump · X or Shift change time of day · Esc pause · M music · Controller: stick/D-pad move, A jump, X/B change time of day, Start pause · Right stick press / corner button: fullscreen</small>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const W=320,H=192,T=16,R=12,NL=40,$=id=>document.getElementById(id),cv=$('c'),g=cv.getContext('2d');
@@ -440,6 +440,7 @@ function hostRecv(c,d){
   case 'reqplay':if((sc=='editor'||isCustom)&&edG.length)edPlay();break;
   case 'done':applyDone(d.lv);d.id=id;noteDone(d);olBcast(d,id);break;
   case 'kill':applyKill(d.i);olBcast(d,id);break;
+  case 'dim':setDimNet(d.v);olBcast(d,id);break;
   case 'edgo':edGoRemote();olBcast(d,id);break;
   case 'pos':d.id=id;setRemote(d);olBcast(d,id);break}}
 function joinParty(code){
@@ -466,6 +467,7 @@ function guestRecv(d,code,to){
   case 'startl':if(d.lv>=0&&d.lv<NL){lv=d.lv|0;isCustom=false;if(d.n){olRemotes={};olKilled=new Set();load(lv)}else start()}break;
   case 'startc':netApplyFull(d.data);olKilled=new Set();loadCustom();break;
   case 'kill':applyKill(d.i);break;
+  case 'dim':setDimNet(d.v);break;
   case 'edgo':edGoRemote();break;
   case 'roster':olN=d.n|0;break;
   case 'edfull':netApplyFull(d.data);break;
@@ -532,7 +534,9 @@ function mv(){p.x+=p.vx;let a=Math.floor(p.y/T),b=Math.floor((p.y+p.h-.01)/T);
  if(p.vy>=0){const ry=Math.floor((p.y+p.h)/T);for(let x=x1;x<=x2;x++){const v=tv(x,ry);if(v==1||(v==2&&pb<=ry*T+.01)){p.y=ry*T-p.h;p.vy=0;p.on=1;break}}}
  else{const ry=Math.floor(p.y/T);for(let x=x1;x<=x2;x++)if(tv(x,ry)==1){p.y=(ry+1)*T;p.vy=0;break}}}
 function burst(x,y,c,n){for(let i=0;i<n;i++)P_.push({x,y,vx:(Math.random()-.5)*3,vy:-Math.random()*3,l:30,c})}
-function swap(){dim^=1;fl=8;sfx('swap');for(let x=Math.floor(p.x/T);x<=Math.floor((p.x+p.w-.01)/T);x++)for(let y=Math.floor(p.y/T);y<=Math.floor((p.y+p.h-.01)/T);y++)if(y>=0&&y<R&&tv(x,y)==1&&G[y][x]>3){p.y=y*T-p.h;p.vy=0}}
+function fixDim(){for(let x=Math.floor(p.x/T);x<=Math.floor((p.x+p.w-.01)/T);x++)for(let y=Math.floor(p.y/T);y<=Math.floor((p.y+p.h-.01)/T);y++)if(y>=0&&y<R&&tv(x,y)==1&&G[y][x]>3){p.y=y*T-p.h;p.vy=0}}
+function swap(){dim^=1;fl=8;sfx('swap');fixDim();if(olRole)olSend({t:'dim',v:dim})}
+function setDimNet(v){v=v?1:0;if(sc!='play'&&sc!='dead'&&sc!='pause'&&sc!='win')return;if(dim==v)return;dim=v;fl=8;sfx('swap');if(sc=='play')fixDim()}
 function die(f){if(sc!='play')return;if(!f){if(p.st>0||p.iv>0)return;if(p.sh){p.sh=0;p.iv=70;p.vy=-4;sfx('stomp');burst(p.x+5,p.y+7,'#4ac8ff',12);return}}sc='dead';dt=75;p.vy=-5;lives--;sfx('hurt');burst(p.x+5,p.y+7,'#ff5a5a',14)}
 /* ---------- controller support (wired + Bluetooth gamepads via the Gamepad API) ---------- */
 let padPrev={};
@@ -588,7 +592,7 @@ function upd(){pollPad();tm++;if(shk>0)shk--;if(edMsgT>0)edMsgT--;if(olMsgT>0)ol
   for(const u of U){if(!u.got&&Math.abs(u.x-p.x-5)<10&&Math.abs(u.y-p.y-7)<11){u.got=1;sfx('life');burst(u.x,u.y,'#fff',10);score+=50;if(u.t=='h')lives++;else if(u.t=='s')p.sh=1;else if(u.t=='w')p.wg=600;else p.st=480}}
   if(p.x>FX*T){sc='win';dt=110;winBy=0;sfx('win');if(!isCustom)completeLevel(lv);else if(olRole)olSend({t:'done',lv:-1,c:1,id:myId})}
   cam+=(cl(p.x+5-W/2+p.face*20,0,LN*T-W)-cam)*.12}
- else if(sc=='dead'){p.vy+=.35;p.y+=p.vy;if(--dt<=0){if(lives<=0)sc='over';else if(isCustom)loadCustom();else load(lv)}}
+ else if(sc=='dead'){p.vy+=.35;p.y+=p.vy;if(--dt<=0){if(lives<=0)sc='over';else{const d0=dim;if(isCustom)loadCustom();else load(lv);if(olRole&&d0){dim=d0;fixDim()}}}}
  else if(sc=='win'){if(--dt<=0){if(isCustom){goEd()}else if(lv+1>=NL){sc='end'}else if(olRole==2){if(dt<-240)sc='wait'}else if(olRole==1){lv++;olRemotes={};olKilled=new Set();load(lv);olBcast({t:'startl',lv,n:1})}else load(lv+1)}}
  else if(sc=='title'||sc=='over'||sc=='end'||sc=='select'||sc=='ed_load'||sc=='online'||sc=='join'||sc=='wait')cam+=.5}
 /* ---------- drawing ---------- */
@@ -665,7 +669,7 @@ function draw(){g.setTransform(3,0,0,3,0,0);g.imageSmoothingEnabled=false;
   tx(isCustom?'CUSTOM':'LV '+(Math.floor(lv/5)+1)+'-'+(lv%5+1),6,12);
   for(let i=0;i<Math.max(5,lives);i++){g.fillStyle=i<lives?(i>=5?'#ffd84a':'#ff3a5a'):'#ffffff33';const hx=6+i*10,hy=18;g.fillRect(hx+1,hy,2,1);g.fillRect(hx+4,hy,2,1);g.fillRect(hx,hy+1,7,2);g.fillRect(hx+1,hy+3,5,1);g.fillRect(hx+2,hy+4,3,1);g.fillRect(hx+3,hy+5,1,1)}
   if(p.wg>0)tx('WINGS '+Math.ceil(p.wg/60),6,34,'#9fe','left',6);if(p.st>0)tx('STAR '+Math.ceil(p.st/60),6,43,'#ffd84a','left',6);tx('SCORE '+String(score).padStart(6,'0'),W/2,12,'#ffd84a','center');tx('●'+coins+(dim?'  ☾':'  ☀'),W-6,12,'#fff','right');if(olRole)tx('P'+myId+' - '+olN+' ONLINE',W-6,22,'#9fe','right',5);
-  if(banner>0&&sc=='play'){g.globalAlpha=Math.min(1,banner/30);if(isCustom){tx('CUSTOM LEVEL',W/2,76,'#ffd84a','center')}else{tx('WORLD '+(Math.floor(lv/5)+1)+' · '+WD[wi].n.toUpperCase(),W/2,70,'#fff','center');tx('Level '+(lv+1)+' of '+NL,W/2,82,'#ffd84a','center');if(lv<3){tx('X / SHIFT = SWAP DIMENSION',W/2,100,'#9fe','center',6);tx('Gold and violet blocks take turns being solid',W/2,110,'#fff','center',6)}}g.globalAlpha=1}}
+  if(banner>0&&sc=='play'){g.globalAlpha=Math.min(1,banner/30);if(isCustom){tx('CUSTOM LEVEL',W/2,76,'#ffd84a','center')}else{tx('WORLD '+(Math.floor(lv/5)+1)+' · '+WD[wi].n.toUpperCase(),W/2,70,'#fff','center');tx('Level '+(lv+1)+' of '+NL,W/2,82,'#ffd84a','center');if(lv<3){tx('X / SHIFT = CHANGE TIME OF DAY',W/2,100,'#9fe','center',6);tx('Gold and violet blocks take turns being solid',W/2,110,'#fff','center',6)}}g.globalAlpha=1}}
  if(sc=='ed_load'){
   g.fillStyle='#000b';g.fillRect(0,0,W,H);
   g.fillStyle='#3a2f5c';g.fillRect(4,4,42,16);tx('BACK',25,15,'#fff','center',6);
@@ -694,7 +698,7 @@ function draw(){g.setTransform(3,0,0,3,0,0);g.imageSmoothingEnabled=false;
  }
  if(sc=='title'){
   g.font='20px "Press Start 2P",monospace';g.textAlign='center';g.fillStyle='#000';g.fillText('PIXEL SHIFT',W/2+2,56);g.fillStyle='#ffd84a';g.fillText('PIXEL SHIFT',W/2,54);
-  tx('swap dimensions to cross the gaps',W/2,72,'#9fe','center',6);
+  tx('change the time of day to cross the gaps',W/2,72,'#9fe','center',6);
   tx('LEVELS UNLOCKED: '+Math.min(maxL+1,NL)+' / '+NL,W/2,88,'#9fe','center');
   const unlockedCreator=(olRole==1?olMinMax():maxL)>=NL;
   const lab=['PLAY LEVELS',unlockedCreator?'LEVEL CREATOR':'LEVEL CREATOR [LOCKED]','ONLINE'+(olRole==1?' [PARTY]':'')];
