@@ -22,7 +22,7 @@ small{opacity:.6;font-size:12px}
 <canvas id="c" width="960" height="576"></canvas>
 <input id="ci" maxlength="6" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
 <div id="tc"><button data-k="arrowleft">◀</button><button data-k="arrowright">▶</button><button data-k="arrowup" style="flex:1.6">JUMP</button><button data-k="x">SWAP</button><button data-k="escape" style="flex:.6">II</button></div>
-<small>Arrows/WASD move · Space/Up jump · X or Shift swap dimension · Esc pause · M music</small>
+<small>Arrows/WASD move · Space/Up jump · X or Shift swap dimension · Esc pause · M music · Controller: stick/D-pad move, A jump, X/B swap, Start pause</small>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const W=320,H=192,T=16,R=12,NL=40,$=id=>document.getElementById(id),cv=$('c'),g=cv.getContext('2d');
@@ -523,7 +523,26 @@ function mv(){p.x+=p.vx;let a=Math.floor(p.y/T),b=Math.floor((p.y+p.h-.01)/T);
 function burst(x,y,c,n){for(let i=0;i<n;i++)P_.push({x,y,vx:(Math.random()-.5)*3,vy:-Math.random()*3,l:30,c})}
 function swap(){dim^=1;fl=8;sfx('swap');for(let x=Math.floor(p.x/T);x<=Math.floor((p.x+p.w-.01)/T);x++)for(let y=Math.floor(p.y/T);y<=Math.floor((p.y+p.h-.01)/T);y++)if(y>=0&&y<R&&tv(x,y)==1&&G[y][x]>3){p.y=y*T-p.h;p.vy=0}}
 function die(f){if(sc!='play')return;if(!f){if(p.st>0||p.iv>0)return;if(p.sh){p.sh=0;p.iv=70;p.vy=-4;sfx('stomp');burst(p.x+5,p.y+7,'#4ac8ff',12);return}}sc='dead';dt=75;p.vy=-5;lives--;sfx('hurt');burst(p.x+5,p.y+7,'#ff5a5a',14)}
-function upd(){tm++;if(shk>0)shk--;if(edMsgT>0)edMsgT--;if(olMsgT>0)olMsgT--;if(olRole&&tm%3==0&&(sc=='play'||sc=='dead'||sc=='pause'))netPos();if(sc=='pause')return;if(banner>0)banner--;
+/* ---------- controller support (wired + Bluetooth gamepads via the Gamepad API) ---------- */
+let padPrev={};
+function pollPad(){
+ let pads=[];try{pads=navigator.getGamepads?Array.from(navigator.getGamepads()):[]}catch(e){}
+ const now={};
+ for(const gp of pads){if(!gp||!gp.connected)continue;
+  const b=i=>gp.buttons[i]&&gp.buttons[i].pressed,lx=gp.axes[0]||0,ly=gp.axes[1]||0,pl=sc=='play';
+  if(b(14)||lx<-.5)now.arrowleft=1;
+  if(b(15)||lx>.5)now.arrowright=1;
+  if(!pl&&(b(12)||ly<-.6))now.arrowup=1;
+  if(!pl&&(b(13)||ly>.6))now.arrowdown=1;
+  if(b(0))now[' ']=1;
+  if(b(2)||b(5)||b(7)||(pl&&b(1)))now.x=1;
+  if(b(8)||b(9)||(!pl&&b(1)))now.escape=1;
+ }
+ for(const k in now)if(!padPrev[k]){K[k]=1;press(k)}
+ for(const k in padPrev)if(!now[k])K[k]=0;
+ padPrev=now}
+addEventListener('gamepadconnected',()=>olNote('Controller connected'));
+function upd(){pollPad();tm++;if(shk>0)shk--;if(edMsgT>0)edMsgT--;if(olMsgT>0)olMsgT--;if(olRole&&tm%3==0&&(sc=='play'||sc=='dead'||sc=='pause'))netPos();if(sc=='pause')return;if(banner>0)banner--;
  P_.forEach(q=>{q.x+=q.vx;q.y+=q.vy;q.vy+=.15;q.l--});P_=P_.filter(q=>q.l>0);
  if(sc=='editor'){
   const spd=K.shift?5:2.5;
