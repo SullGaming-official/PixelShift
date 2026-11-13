@@ -199,7 +199,7 @@ function press(k){ini();if(k=='m'){mus=!mus;return}
    if((!isCustom&&pm==1)||(isCustom&&pm==2))setSk(k=='arrowleft'||k=='a'?-1:1);
   }else if(k=='enter'||k==' '){
    if(pm==0)sc='play';
-   else if(isCustom&&pm==1){isCustom=false;sc='editor'}
+   else if(isCustom&&pm==1){goEd()}
    else if((!isCustom&&pm==1)||(isCustom&&pm==2))setSk(1);
    else toMenu();
   }
@@ -350,7 +350,7 @@ cv.addEventListener('pointerdown',e=>{ini();
   const n=isCustom?4:3,topY=isCustom?68:78;
   const idx=cl(Math.floor((y-topY)/22),0,n-1);pm=idx;
   if(pm==0)sc='play';
-  else if(isCustom&&pm==1){isCustom=false;sc='editor'}
+  else if(isCustom&&pm==1){goEd()}
   else if((!isCustom&&pm==1)||(isCustom&&pm==2))setSk(x<W/2?-1:1);
   else toMenu();
  }else if(sc=='title'){
@@ -381,7 +381,7 @@ function olLeave(){
 function leaveLobby(){olLeave();sc='title'}
 function toMenu(){isCustom=false;if(olRole==2){leaveLobby();return}sc='title';if(olRole==1)olBcast({t:'scene',s:'wait'})}
 function edBack(){if(olRole==2){leaveLobby();return}sc='title';if(olRole==1)olBcast({t:'scene',s:'wait'})}
-function afterEnd(){if(isCustom){isCustom=false;sc='editor'}else sc=olRole==2?'wait':'title'}
+function afterEnd(){if(isCustom){goEd()}else sc=olRole==2?'wait':'title'}
 function openOnline(){sc='online';olSel=0;olStat=''}
 function edSync(){if(olRole)olSend({t:'edfull',data:serializeEd()})}
 function edPlay(){if(olRole==2){olSend({t:'reqplay'});return}olKilled=new Set();if(olRole==1)olBcast({t:'startc',data:serializeEd()});loadCustom()}
@@ -396,6 +396,8 @@ function noteDone(d){if(d.id&&d.id!=myId)olNote('P'+d.id+' cleared level '+((d.l
 function netPos(){olSend({t:'pos',id:myId,x:+p.x.toFixed(1),y:+p.y.toFixed(1),f:p.face,k:sk,a:Math.floor(p.an)&1,o:p.on?1:0,s:sc=='dead'?1:0,h:p.sh?1:0,w:p.wg>0?1:0,r:p.st>0?1:0})}
 function setRemote(d){if(Number.isFinite(d.x)&&Number.isFinite(d.y)&&Number.isInteger(d.id)&&d.id!=myId)olRemotes[d.id]={x:d.x,y:d.y,f:d.f<0?-1:1,k:d.k|0,a:d.a&1,o:d.o?1:0,s:d.s?1:0,h:d.h?1:0,w:d.w?1:0,r:d.r?1:0,t:tm}}
 let olKilled=new Set();
+function goEd(){isCustom=false;sc='editor';if(olRole)olSend({t:'edgo'})}
+function edGoRemote(){if(isCustom){isCustom=false;sc='editor';olRemotes={};if(AC)setSong(edW)}}
 function applyKill(i){if(!Number.isInteger(i)||!E)return;olKilled.add(i);const e=E[i];if(e&&e.alive&&(sc=='play'||sc=='dead'||sc=='pause'||sc=='win')){e.alive=0;burst(e.x+6,e.y+8,'#c9f',10);sfx('stomp')}}
 function olReapply(){if(olRole&&E)for(const i of olKilled)if(E[i])E[i].alive=0}
 function createParty(n){
@@ -427,6 +429,7 @@ function hostRecv(c,d){
   case 'reqplay':if((sc=='editor'||isCustom)&&edG.length)edPlay();break;
   case 'done':applyDone(d.lv);d.id=id;noteDone(d);olBcast(d,id);break;
   case 'kill':applyKill(d.i);olBcast(d,id);break;
+  case 'edgo':edGoRemote();olBcast(d,id);break;
   case 'pos':d.id=id;setRemote(d);olBcast(d,id);break}}
 function joinParty(code){
  if(typeof Peer=='undefined'){olStat='ERROR: NO INTERNET';return}
@@ -452,6 +455,7 @@ function guestRecv(d,code,to){
   case 'startl':if(d.lv>=0&&d.lv<NL){lv=d.lv|0;isCustom=false;start()}break;
   case 'startc':netApplyFull(d.data);olKilled=new Set();loadCustom();break;
   case 'kill':applyKill(d.i);break;
+  case 'edgo':edGoRemote();break;
   case 'roster':olN=d.n|0;break;
   case 'edfull':netApplyFull(d.data);break;
   case 'tile':edTile(d.tx,d.ty,d.tool);break;
@@ -542,7 +546,7 @@ function upd(){tm++;if(shk>0)shk--;if(edMsgT>0)edMsgT--;if(olMsgT>0)olMsgT--;if(
   if(p.x>FX*T){sc='win';dt=110;sfx('win');if(!isCustom)completeLevel(lv)}
   cam+=(cl(p.x+5-W/2+p.face*20,0,LN*T-W)-cam)*.12}
  else if(sc=='dead'){p.vy+=.35;p.y+=p.vy;if(--dt<=0){if(lives<=0)sc='over';else if(isCustom)loadCustom();else load(lv)}}
- else if(sc=='win'){if(--dt<=0){if(isCustom){isCustom=false;sc='editor'}else if(lv+1>=NL){sc='end'}else if(olRole==2){sc='wait'}else if(olRole==1){sc='select';sel=lv+1}else load(lv+1)}}
+ else if(sc=='win'){if(--dt<=0){if(isCustom){goEd()}else if(lv+1>=NL){sc='end'}else if(olRole==2){sc='wait'}else if(olRole==1){sc='select';sel=lv+1}else load(lv+1)}}
  else if(sc=='title'||sc=='over'||sc=='end'||sc=='select'||sc=='ed_load'||sc=='online'||sc=='join'||sc=='wait')cam+=.5}
 /* ---------- drawing ---------- */
 function tx(s,x,y,c,al,z){g.font=(z||8)+'px "Press Start 2P",ui-monospace,monospace';g.textAlign=al||'left';g.fillStyle='#000a';g.fillText(s,x+1,y+1);g.fillStyle=c||'#fff';g.fillText(s,x,y)}
