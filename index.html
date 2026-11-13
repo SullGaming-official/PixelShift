@@ -401,10 +401,12 @@ function applyDone(n){n=n|0;if(n<0||n>=NL)return;
  if(n+1>maxL){maxL=Math.min(NL,n+1);try{localStorage.setItem('pq_max',maxL)}catch(e){}}
  if(olRole==1)for(const k in olGuests)olGuests[k].max=Math.max(olGuests[k].max,Math.min(NL,n+1));if(olRole==2)olSend({t:'max',v:maxL})}
 function completeLevel(n){applyDone(n);if(olRole)olSend({t:'done',lv:n,id:myId})}
-function noteDone(d){if(d.id&&d.id!=myId)olNote('P'+d.id+' cleared level '+((d.lv|0)+1))}
+function noteDone(d){if(!d.id||d.id==myId)return;const cu=d.c?1:0;
+ if(cu==(isCustom?1:0)&&(cu||(d.lv|0)==lv)&&(sc=='play'||sc=='dead'||sc=='pause'||sc=='over')){sc='win';dt=110;winBy=d.id;sfx('win')}
+ else if(!cu)olNote('P'+d.id+' cleared level '+((d.lv|0)+1))}
 function netPos(){olSend({t:'pos',id:myId,x:+p.x.toFixed(1),y:+p.y.toFixed(1),f:p.face,k:sk,a:Math.floor(p.an)&1,o:p.on?1:0,s:sc=='dead'?1:0,h:p.sh?1:0,w:p.wg>0?1:0,r:p.st>0?1:0})}
 function setRemote(d){if(Number.isFinite(d.x)&&Number.isFinite(d.y)&&Number.isInteger(d.id)&&d.id!=myId)olRemotes[d.id]={x:d.x,y:d.y,f:d.f<0?-1:1,k:d.k|0,a:d.a&1,o:d.o?1:0,s:d.s?1:0,h:d.h?1:0,w:d.w?1:0,r:d.r?1:0,t:tm}}
-let olKilled=new Set();
+let olKilled=new Set(),winBy=0;
 function goEd(){isCustom=false;sc='editor';if(olRole)olSend({t:'edgo'})}
 function edGoRemote(){if(isCustom){isCustom=false;sc='editor';olRemotes={};if(AC)setSong(edW)}}
 function applyKill(i){if(!Number.isInteger(i)||!E)return;olKilled.add(i);const e=E[i];if(e&&e.alive&&(sc=='play'||sc=='dead'||sc=='pause'||sc=='win')){e.alive=0;burst(e.x+6,e.y+8,'#c9f',10);sfx('stomp')}}
@@ -461,7 +463,7 @@ function guestRecv(d,code,to){
  if(olRole!=2)return;
  switch(d.t){
   case 'scene':olRemotes={};if(d.s=='ed'){netApplyFull(d.data);cam=0;isCustom=false;sc='editor';if(AC)setSong(edW)}else{isCustom=false;sc='wait'}break;
-  case 'startl':if(d.lv>=0&&d.lv<NL){lv=d.lv|0;isCustom=false;start()}break;
+  case 'startl':if(d.lv>=0&&d.lv<NL){lv=d.lv|0;isCustom=false;if(d.n){olRemotes={};olKilled=new Set();load(lv)}else start()}break;
   case 'startc':netApplyFull(d.data);olKilled=new Set();loadCustom();break;
   case 'kill':applyKill(d.i);break;
   case 'edgo':edGoRemote();break;
@@ -584,10 +586,10 @@ function upd(){pollPad();tm++;if(shk>0)shk--;if(edMsgT>0)edMsgT--;if(olMsgT>0)ol
    if(p.x+p.w>e.x+1&&p.x<e.x+11&&p.y+p.h>e.y+2&&p.y<e.y+12){if((e.k!='s'&&p.vy>0&&pb<=e.y+7)||p.st>0){e.alive=0;if(olRole){olKilled.add(E.indexOf(e));olSend({t:'kill',i:E.indexOf(e)})}p.vy=-4.8;score+=100;sfx('stomp');burst(e.x+6,e.y+8,'#c9f',10)}else return die()}}
   for(const c of C){if(!c.got&&Math.abs(c.x-p.x-5)<9&&Math.abs(c.y-p.y-7)<10){c.got=1;score+=10;coins++;sfx('coin');if(coins%50==0){lives++;sfx('life')}burst(c.x,c.y,'#ffd84a',5)}}
   for(const u of U){if(!u.got&&Math.abs(u.x-p.x-5)<10&&Math.abs(u.y-p.y-7)<11){u.got=1;sfx('life');burst(u.x,u.y,'#fff',10);score+=50;if(u.t=='h')lives++;else if(u.t=='s')p.sh=1;else if(u.t=='w')p.wg=600;else p.st=480}}
-  if(p.x>FX*T){sc='win';dt=110;sfx('win');if(!isCustom)completeLevel(lv)}
+  if(p.x>FX*T){sc='win';dt=110;winBy=0;sfx('win');if(!isCustom)completeLevel(lv);else if(olRole)olSend({t:'done',lv:-1,c:1,id:myId})}
   cam+=(cl(p.x+5-W/2+p.face*20,0,LN*T-W)-cam)*.12}
  else if(sc=='dead'){p.vy+=.35;p.y+=p.vy;if(--dt<=0){if(lives<=0)sc='over';else if(isCustom)loadCustom();else load(lv)}}
- else if(sc=='win'){if(--dt<=0){if(isCustom){goEd()}else if(lv+1>=NL){sc='end'}else if(olRole==2){sc='wait'}else if(olRole==1){sc='select';sel=lv+1}else load(lv+1)}}
+ else if(sc=='win'){if(--dt<=0){if(isCustom){goEd()}else if(lv+1>=NL){sc='end'}else if(olRole==2){if(dt<-240)sc='wait'}else if(olRole==1){lv++;olRemotes={};olKilled=new Set();load(lv);olBcast({t:'startl',lv,n:1})}else load(lv+1)}}
  else if(sc=='title'||sc=='over'||sc=='end'||sc=='select'||sc=='ed_load'||sc=='online'||sc=='join'||sc=='wait')cam+=.5}
 /* ---------- drawing ---------- */
 function tx(s,x,y,c,al,z){g.font=(z||8)+'px "Press Start 2P",ui-monospace,monospace';g.textAlign=al||'left';g.fillStyle='#000a';g.fillText(s,x+1,y+1);g.fillStyle=c||'#fff';g.fillText(s,x,y)}
@@ -740,7 +742,7 @@ function draw(){g.setTransform(3,0,0,3,0,0);g.imageSmoothingEnabled=false;
   btn(W/2-60,140,120,18,'LEAVE LOBBY',0,'#ff9a9a',6);
  }
  if(sc=='select'){g.fillStyle='#000a';g.fillRect(0,0,W,H);tx('SELECT LEVEL',W/2,14,'#ffd84a','center',10);const mm=olRole==1?olMinMax():maxL;for(let w=0;w<8;w++){const P=WD[w],y=24+w*20;tx(P.n.toUpperCase(),8,y+11,'#cfd','left',6);for(let j=0;j<5;j++){const i=w*5+j,x=100+j*42,ok=i<=mm,sl=i==sel,sx=sl&&shk>0?(shk%2?2:-2):0;g.fillStyle=ok?P.tp:'#2a2a3a';g.fillRect(x+sx,y,38,17);g.fillStyle=ok?P.gr:'#1a1a26';g.fillRect(x+sx+2,y+2,34,13);if(sl){g.strokeStyle='#fff';g.lineWidth=1.5;g.strokeRect(x+sx-1,y-1,40,19)}if(ok){tx(String(i+1),x+sx+19,y+12,'#fff','center',7);if(i<mm)tx('✓',x+sx+33,y+9,'#9fe','center',6)}else{g.fillStyle='#778';g.fillRect(x+sx+15,y+8,8,6);g.strokeStyle='#778';g.lineWidth=1.5;g.strokeRect(x+sx+16.5,y+4.5,5,4)}}}tx(sel<=mm?'ENTER: PLAY   ESC: BACK':(olRole==1?'LOCKED FOR SOMEONE IN YOUR PARTY':'LOCKED - BEAT LEVEL '+sel+' FIRST'),W/2,189,sel<=mm?'#9fe':'#ff8a8a','center',6)}
- if(sc=='win'){tx(isCustom?'CUSTOM LEVEL CLEAR!':'LEVEL CLEAR!',W/2,90,'#ffd84a','center')}
+ if(sc=='win'){tx(isCustom?'CUSTOM LEVEL CLEAR!':'LEVEL CLEAR!',W/2,90,'#ffd84a','center');if(winBy)tx('P'+winBy+' REACHED THE FLAG!',W/2,104,'#9fe','center',6)}
  if(sc=='over'){g.fillStyle='#000a';g.fillRect(0,0,W,H);tx('GAME OVER',W/2,88,'#ff5a5a','center');tx('Score '+score,W/2,102,'#fff','center');tx(isCustom?'Press Enter or tap to edit':'Press Enter or tap',W/2,120,'#ccc','center')}
  if(sc=='end'){tx('YOU BEAT ALL '+NL+' LEVELS!',W/2,72,'#ffd84a','center');tx('LEVEL CREATOR UNLOCKED!',W/2,88,'#9fe','center',7);tx('Final score '+score,W/2,104,'#fff','center');tx('Press Enter or tap',W/2,122,'#ccc','center')}
  if(sc=='pause'){
