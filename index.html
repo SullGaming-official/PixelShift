@@ -12,17 +12,26 @@
 html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:ui-monospace,Menlo,Consolas,monospace;overscroll-behavior:none;touch-action:manipulation}
 body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;user-select:none;-webkit-user-select:none}
 canvas{width:min(100vw,calc((100vh - 70px)*5/3));height:auto;aspect-ratio:5/3;image-rendering:auto;background:#000}
-#tc{display:none;gap:10px;width:min(100vw,520px);padding:0 10px;box-sizing:border-box}
-#tc button{flex:1;height:54px;border:0;border-radius:12px;background:var(--bt);color:var(--fg);font:bold 20px ui-monospace,monospace;touch-action:none}
-#tc button{cursor:pointer;transition:filter .12s}#tc button:hover,#tc button:active{filter:brightness(1.5)}
-@media (pointer:coarse){#tc{display:flex}}
+#tc{display:none}
+@media (pointer:coarse){#tc{display:block}small{display:none}canvas{width:min(100vw,calc(100vh*5/3));width:min(100vw,calc(100dvh*5/3))}}
+#joy{position:fixed;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:132px;height:132px;border-radius:50%;background:#ffffff14;border:2px solid #ffffff3a;touch-action:none;z-index:5}
+#knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:#ffffff55;pointer-events:none}
+.ab{position:fixed;border:2px solid #ffffff40;border-radius:50%;background:#3a2f5ca0;color:var(--fg);font:bold 13px ui-monospace,monospace;touch-action:none;z-index:5;cursor:pointer;padding:0}
+.ab:active{background:#6a5aa0d0}
+#bj{width:88px;height:88px;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+#bx{width:68px;height:68px;right:calc(116px + env(safe-area-inset-right,0px));bottom:calc(34px + env(safe-area-inset-bottom,0px))}
+.sb{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));width:34px;height:34px;border:1px solid #ffffff40;border-radius:8px;background:#0008;color:#fff;font:bold 13px ui-monospace,monospace;opacity:.65;z-index:6;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:none}
+.sb:hover,.sb:active{opacity:1}
+#fsb{right:calc(8px + env(safe-area-inset-right,0px))}
+#pz{right:calc(48px + env(safe-area-inset-right,0px))}
 small{opacity:.6;font-size:12px}
 #ci{position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0;pointer-events:none}
 </style></head><body>
 <canvas id="c" width="960" height="576"></canvas>
 <input id="ci" maxlength="6" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
-<div id="tc"><button data-k="arrowleft">◀</button><button data-k="arrowright">▶</button><button data-k="arrowup" style="flex:1.6">JUMP</button><button data-k="x">SWAP</button><button data-k="escape" style="flex:.6">II</button></div>
-<small>Arrows/WASD move · Space/Up jump · X or Shift swap dimension · Esc pause · M music · Controller: stick/D-pad move, A jump, X/B swap, Start pause</small>
+<div id="tc"><div id="joy"><div id="knob"></div></div><button class="ab" id="bx" data-k="x">SWAP</button><button class="ab" id="bj" data-k=" ">JUMP</button><button class="sb" id="pz" data-k="escape">II</button></div>
+<button class="sb" id="fsb" title="Fullscreen" aria-label="Fullscreen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+<small>Arrows/WASD move · Space/Up jump · X or Shift swap dimension · Esc pause · M music · Controller: stick/D-pad move, A jump, X/B swap, Start pause · Right stick press / corner button: fullscreen</small>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const W=320,H=192,T=16,R=12,NL=40,$=id=>document.getElementById(id),cv=$('c'),g=cv.getContext('2d');
@@ -537,10 +546,23 @@ function pollPad(){
   if(b(0))now[' ']=1;
   if(b(2)||b(5)||b(7)||(pl&&b(1)))now.x=1;
   if(b(8)||b(9)||(!pl&&b(1)))now.escape=1;
+  if(b(11))now.fs=1;
  }
- for(const k in now)if(!padPrev[k]){K[k]=1;press(k)}
+ for(const k in now)if(!padPrev[k]){if(k=='fs'){fsToggle();continue}K[k]=1;press(k)}
  for(const k in padPrev)if(!now[k])K[k]=0;
  padPrev=now}
+function fsToggle(){try{const d=document,el=d.documentElement;if(d.fullscreenElement||d.webkitFullscreenElement)(d.exitFullscreen||d.webkitExitFullscreen).call(d);else{const f=el.requestFullscreen||el.webkitRequestFullscreen;if(f){const q=f.call(el);if(q&&q.catch)q.catch(()=>{})}}}catch(e){}}
+{const fsb=$('fsb');if(!(document.fullscreenEnabled||document.webkitFullscreenEnabled))fsb.style.display='none';fsb.addEventListener('click',()=>{fsToggle();fsb.blur()})}
+/* on-screen joystick (touch) */
+(()=>{const joy=$('joy'),kn=$('knob');let id=null,jp={};
+ const set=(k,v)=>{if(v&&!jp[k]){jp[k]=1;K[k]=1;press(k)}else if(!v&&jp[k]){jp[k]=0;K[k]=0}};
+ function mv(e){const r=joy.getBoundingClientRect(),R0=r.width/2*.6;let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const d=Math.hypot(dx,dy);if(d>R0){dx*=R0/d;dy*=R0/d}
+  kn.style.transform='translate('+dx+'px,'+dy+'px)';const nx=dx/R0,ny=dy/R0,pl=sc=='play';
+  set('arrowleft',nx<-.35);set('arrowright',nx>.35);set('arrowup',!pl&&ny<-.5);set('arrowdown',!pl&&ny>.5);set(' ',pl&&ny<-.7)}
+ function end(){id=null;kn.style.transform='';['arrowleft','arrowright','arrowup','arrowdown',' '].forEach(k=>set(k,false))}
+ joy.addEventListener('pointerdown',e=>{e.preventDefault();ini();id=e.pointerId;try{joy.setPointerCapture(e.pointerId)}catch(_){}mv(e)});
+ joy.addEventListener('pointermove',e=>{if(e.pointerId===id)mv(e)});
+ ['pointerup','pointercancel','lostpointercapture'].forEach(v=>joy.addEventListener(v,e=>{if(e.pointerId===id)end()}))})();
 addEventListener('gamepadconnected',()=>olNote('Controller connected'));
 function upd(){pollPad();tm++;if(shk>0)shk--;if(edMsgT>0)edMsgT--;if(olMsgT>0)olMsgT--;if(olRole&&tm%3==0&&(sc=='play'||sc=='dead'||sc=='pause'))netPos();if(sc=='pause')return;if(banner>0)banner--;
  P_.forEach(q=>{q.x+=q.vx;q.y+=q.vy;q.vy+=.15;q.l--});P_=P_.filter(q=>q.l>0);
