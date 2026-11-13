@@ -24,12 +24,13 @@ canvas{width:min(100vw,calc((100vh - 70px)*5/3));height:auto;aspect-ratio:5/3;im
 .sb:hover,.sb:active{opacity:1}
 #fsb{right:calc(8px + env(safe-area-inset-right,0px))}
 #pz{right:calc(48px + env(safe-area-inset-right,0px))}
+#mz{right:calc(88px + env(safe-area-inset-right,0px))}
 small{opacity:.6;font-size:12px}
 #ci{position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0;pointer-events:none}
 </style></head><body>
 <canvas id="c" width="960" height="576"></canvas>
 <input id="ci" maxlength="6" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
-<div id="tc"><div id="joy"><div id="knob"></div></div><button class="ab" id="bx" data-k="x">B</button><button class="ab" id="bj" data-k=" ">A</button><button class="sb" id="pz" data-k="escape">⬅</button></div>
+<div id="tc"><div id="joy"><div id="knob"></div></div><button class="ab" id="bx" data-k="x">B</button><button class="ab" id="bj" data-k=" ">A</button><button class="sb" id="mz" data-k="m" aria-label="Music">M</button><button class="sb" id="pz" data-k="escape">⬅</button></div>
 <button class="sb" id="fsb" title="Fullscreen" aria-label="Fullscreen"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
 <small>Arrows/WASD move · Space/Up jump · X or Shift change time of day · Esc pause · M music · Controller: stick/D-pad move, A jump, X/B change time of day, Start pause · Right stick press / corner button: fullscreen</small>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
