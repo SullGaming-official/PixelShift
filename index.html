@@ -393,8 +393,8 @@ function applyDone(n){n=n|0;if(n<0||n>=NL)return;
  if(olRole==1)for(const k in olGuests)olGuests[k].max=Math.max(olGuests[k].max,Math.min(NL,n+1));if(olRole==2)olSend({t:'max',v:maxL})}
 function completeLevel(n){applyDone(n);if(olRole)olSend({t:'done',lv:n,id:myId})}
 function noteDone(d){if(d.id&&d.id!=myId)olNote('P'+d.id+' cleared level '+((d.lv|0)+1))}
-function netPos(){olSend({t:'pos',id:myId,x:+p.x.toFixed(1),y:+p.y.toFixed(1),f:p.face,k:sk,a:Math.floor(p.an)&1,o:p.on?1:0,s:sc=='dead'?1:0})}
-function setRemote(d){if(Number.isFinite(d.x)&&Number.isFinite(d.y)&&Number.isInteger(d.id)&&d.id!=myId)olRemotes[d.id]={x:d.x,y:d.y,f:d.f<0?-1:1,k:d.k|0,a:d.a&1,o:d.o?1:0,s:d.s?1:0,t:tm}}
+function netPos(){olSend({t:'pos',id:myId,x:+p.x.toFixed(1),y:+p.y.toFixed(1),f:p.face,k:sk,a:Math.floor(p.an)&1,o:p.on?1:0,s:sc=='dead'?1:0,h:p.sh?1:0,w:p.wg>0?1:0,r:p.st>0?1:0})}
+function setRemote(d){if(Number.isFinite(d.x)&&Number.isFinite(d.y)&&Number.isInteger(d.id)&&d.id!=myId)olRemotes[d.id]={x:d.x,y:d.y,f:d.f<0?-1:1,k:d.k|0,a:d.a&1,o:d.o?1:0,s:d.s?1:0,h:d.h?1:0,w:d.w?1:0,r:d.r?1:0,t:tm}}
 let olKilled=new Set();
 function applyKill(i){if(!Number.isInteger(i)||!E)return;olKilled.add(i);const e=E[i];if(e&&e.alive&&(sc=='play'||sc=='dead'||sc=='pause'||sc=='win')){e.alive=0;burst(e.x+6,e.y+8,'#c9f',10);sfx('stomp')}}
 function olReapply(){if(olRole&&E)for(const i of olKilled)if(E[i])E[i].alive=0}
@@ -479,6 +479,9 @@ function drawGhosts(){const c=Math.floor(cam);
   g.globalAlpha=r.s?.25:.55;
   g.fillStyle=K2.h;g.fillRect(X+1,Y,10,4);g.fillRect(f>0?X+6:X-1,Y+2,6,2);g.fillStyle=K2.s;g.fillRect(X+2,Y+4,8,4);g.fillStyle='#000';g.fillRect(X+(f>0?7:3),Y+5,2,2);
   g.fillStyle=K2.b;g.fillRect(X+1,Y+8,10,3);g.fillStyle=K2.l;g.fillRect(X+(lg==1?0:1),Y+11,4,3);g.fillRect(X+(lg==1?8:7),Y+11,4,3);
+  if(r.h){g.strokeStyle='#4ac8ffcc';g.lineWidth=1.2;g.beginPath();g.arc(X+6,Y+7,11,0,7);g.stroke()}
+  if(r.w){g.fillStyle='#ffffffcc';const fw=(tm>>2)&1?3:0;g.fillRect(X-5,Y+3+fw,5,3);g.fillRect(X+12,Y+3+fw,5,3)}
+  if(r.r&&(tm>>2)&1){g.fillStyle='#ffd84a88';g.fillRect(X-1,Y-1,14,16)}
   g.globalAlpha=1;tx('P'+id,X+6,Y-3,'#fff','center',5)}}
 
 /* ---------- level generation ---------- */
